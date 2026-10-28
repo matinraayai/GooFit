@@ -20,6 +20,8 @@
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #include <cuda_runtime.h>
+#elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_HIP
+#include <hip/hip_version.h>
 #endif
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP || THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
@@ -113,6 +115,32 @@ auto goofit_info_device(int gpuDev_) -> std::string {
         }
     }
 
+#elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_HIP
+    if(gpuDev_ >= 0) {
+        output += fmt::format("HIP {}.{}.{}\n", HIP_VERSION_MAJOR, HIP_VERSION_MINOR, HIP_VERSION_PATCH);
+
+        int nDev = 0;
+        hipGetDeviceCount(&nDev);
+        output += fmt::format("HIP: Number of devices: {}\n", nDev);
+
+        if(nDev > 0) {
+            hipDeviceProp_t devProp;
+            hipGetDeviceProperties(&devProp, gpuDev_);
+            output += fmt::format("HIP: Device {}: {}\n", gpuDev_, devProp.name);
+
+            output += fmt::format("HIP: Architecture {}\n", devProp.gcnArchName);
+            output += fmt::format("HIP: Total global memory: {} GB\n", devProp.totalGlobalMem / 1.0e9);
+            output += fmt::format("HIP: Compute units: {}", devProp.multiProcessorCount);
+
+#ifdef GOOFIT_DEBUG_FLAG
+            output += fmt::format("\nHIP: Total amount of shared memory per block: {}\n", devProp.sharedMemPerBlock);
+            output += fmt::format("HIP: Total registers per block: {}\n", devProp.regsPerBlock);
+            output += fmt::format("HIP: Wavefront size: {}\n", devProp.warpSize);
+            output += fmt::format("HIP: Total amount of constant memory: {}", devProp.totalConstMem);
+#endif
+        }
+    }
+
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP
     output += fmt::format("OMP: Number of threads: {}", omp_get_max_threads());
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
@@ -153,6 +181,19 @@ void print_goofit_info(int gpuDev_) {
                     deviceProp.minor,
                     deviceProp.totalGlobalMem / pow(1024.0, 3.0));
     }
+#elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_HIP
+    int deviceCount;
+    hipGetDeviceCount(&deviceCount);
+
+    for(int i = 0; i < deviceCount; i++) {
+        hipDeviceProp_t deviceProp;
+        hipGetDeviceProperties(&deviceProp, i);
+        GOOFIT_INFO("HIP: {} {}: Architecture {}; Memory {} GB",
+                    i,
+                    deviceProp.name,
+                    deviceProp.gcnArchName,
+                    deviceProp.totalGlobalMem / pow(1024.0, 3.0));
+    }
 #endif
 }
 
@@ -168,7 +209,7 @@ Application::Application(std::string description, int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myId);
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#ifdef GOOFIT_GPU
     int deviceCount;
     cudaGetDeviceCount(&deviceCount);
 
@@ -202,7 +243,7 @@ Application::Application(std::string description, int argc, char **argv)
         gpuDev_ = 0;
     }
 
-    std::cout << "MPI using CUDA device: " << gpuDev_ << std::endl;
+    std::cout << "MPI using GPU device: " << gpuDev_ << std::endl;
     cudaSetDevice(gpuDev_);
 #endif
 #endif
@@ -210,7 +251,7 @@ Application::Application(std::string description, int argc, char **argv)
     // Fallthrough is useful for most models of GooFit subcommands
     fallthrough();
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#ifdef GOOFIT_GPU
 #ifndef GOOFIT_MPI
     add_option("--gpu-dev", gpuDev_, "GPU device to use")->capture_default_str()->group("GooFit");
 #endif
@@ -254,7 +295,7 @@ void Application::pre_callback() {
 void Application::run() { parse(argc_, argv_); }
 
 void Application::set_device() const {
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#ifdef GOOFIT_GPU
     if(gpuDev_ >= 0) {
         cudaSetDevice(gpuDev_);
     }
@@ -285,8 +326,8 @@ Application::~Application() {
 
 // This function call is enabled for macOS, too. Will not have an affect for CUDA code.
 void Application::set_floating_exceptions() {
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-    GOOFIT_INFO("CUDA does not support floating point exceptions. Please recompile in OMP or CPP mode.");
+#ifdef GOOFIT_GPU
+    GOOFIT_INFO("GPUs do not support floating point exceptions. Please recompile in OMP or CPP mode.");
 #else
     feenableexcept(FE_DIVBYZERO | FE_INVALID);
 #endif

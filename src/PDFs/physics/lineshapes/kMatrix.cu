@@ -9,7 +9,7 @@
 
 #include "Common.h"
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#ifdef GOOFIT_GPU
 #include <goofit/detail/compute_inverse5.h>
 #endif
 

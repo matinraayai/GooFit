@@ -12,7 +12,7 @@
 // system is not CUDA. This header is force-included (-include) into every
 // translation unit, so the macros are seen before any MCBooster/GooFit header,
 // regardless of include order.
-#if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
+#if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA && THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_HIP
 #ifndef __host__
 #define __host__
 #endif

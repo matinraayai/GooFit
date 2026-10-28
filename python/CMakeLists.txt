@@ -49,6 +49,12 @@ goofit_add_library(_goofit MODULE include/goofit/PyProps.h include/goofit/Python
 add_subdirectory(goofit)
 add_subdirectory(PDFs)
 
+# The subdirectories add sources to _goofit with target_sources, after goofit_add_library ran
+if(GOOFIT_DEVICE STREQUAL HIP)
+  get_target_property(_goofit_sources _goofit SOURCES)
+  goofit_set_hip_language(${_goofit_sources})
+endif()
+
 process_pybind_module(_goofit)
 target_link_libraries(_goofit PRIVATE _goofit_python _Core _Basic _Combine _Physics)
 

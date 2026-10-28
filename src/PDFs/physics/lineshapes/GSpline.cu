@@ -23,8 +23,9 @@ __device__ inline auto BlattWeisskopf_Norm(const fptype z2, const fptype z02, un
     else if(L == 2)
         return (z02 * z02 + 3 * z02 + 9) / (z2 * z2 + 3 * z2 + 9);
     else {
-        abort(__FILE__, __LINE__, "Wrong value of L");
-        return 0; // Can't reach
+        // GooFit::abort is host-only
+        printf("Wrong value of L in BlattWeisskopf_Norm\n");
+        return 0;
     }
 }
 

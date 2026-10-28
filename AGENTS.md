@@ -1,11 +1,15 @@
 # Agent notes
 
 GooFit is a massively-parallel C++ framework for maximum-likelihood fits (mostly high-energy physics
-amplitude analyses). The same source compiles to four Thrust backends selected at build time:
-`CUDA`, `OMP` (OpenMP), `TBB`, or `CPP` (single-threaded). There are also pybind11-based Python bindings.
+amplitude analyses). The same source compiles to five Thrust backends selected at build time:
+`CUDA`, `HIP` (AMD GPUs, via rocThrust), `OMP` (OpenMP), `TBB`, or `CPP` (single-threaded). There are also 
+pybind11-based Python bindings.
 
 Most "device" source files are `.cu` (CUDA syntax) but compile for every backend — Thrust abstracts the
-device. Files compile under `nvcc` for CUDA and as plain C++ otherwise.
+device. Files compile under `nvcc` for CUDA, as the HIP language for HIP (every GooFit `.cu` *and* `.cpp`,
+since GCC cannot parse rocThrust), and as plain C++ otherwise. HIP reuses the CUDA runtime names via
+`include/goofit/detail/HipCompat.h`; test `GOOFIT_GPU` (set for CUDA and HIP) rather than
+`THRUST_DEVICE_SYSTEM_CUDA` when code means "any GPU backend".
 
 ## Building
 
@@ -16,6 +20,7 @@ build, and run ctest:
 make auto   # best-available backend  -> build/
 make omp    # OpenMP                  -> build-omp/
 make cuda   # CUDA                    -> build-cuda/
+make hip    # HIP (AMD)               -> build-hip/
 make mpi    # MPI on                  -> build-mpi/
 ```
 
@@ -26,9 +31,10 @@ cmake -S . -B build -DGOOFIT_DEVICE=OMP -DGOOFIT_TESTS=ON
 cmake --build build -j$(nproc)
 ```
 
-Key options: `-DGOOFIT_DEVICE=` (`Auto`/`CUDA`/`OMP`/`TBB`/`CPP`), `-DGOOFIT_EXAMPLES=ON`,
+Key options: `-DGOOFIT_DEVICE=` (`Auto`/`CUDA`/`HIP`/`OMP`/`TBB`/`CPP`), `-DGOOFIT_EXAMPLES=ON`,
 `-DGOOFIT_TESTS=ON`, `-DGOOFIT_PYTHON=ON`, `-DGOOFIT_MPI=ON`, `-DGOOFIT_DEBUG=ON`/`-DGOOFIT_TRACE=ON`
-(enable the matching printout macros). `Auto` picks CUDA if found, else OpenMP, else CPP. On macOS the
+(enable the matching printout macros). `Auto` picks CUDA if found, else HIP, else OpenMP, else CPP. For HIP,
+`-DCMAKE_HIP_ARCHITECTURES=gfx...` picks the GPU target (defaults to the GPU on the build machine). On macOS the
 default Clang gives a `CPP` build; OpenMP needs `brew install libomp`.
 
 ROOT 6 is optional but recommended — without it, the bundled Minuit2 submodule is used and the Minuit1

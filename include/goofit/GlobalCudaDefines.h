@@ -22,10 +22,20 @@ extern int host_callnumber;
 #define _Pragma(x) __pragma(x)
 #endif
 
-// Allow code to work on non-CUDA systems (beyond what is provided with thrust).
+// GOOFIT_GPU is set for the GPU backends (CUDA and HIP), which share a code path:
+// HIP builds use the CUDA runtime names, mapped onto HIP by HipCompat.h.
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA || THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_HIP
+#define GOOFIT_GPU 1
+#endif
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_HIP
+#include <goofit/detail/HipCompat.h>
+#endif
+
+// Allow code to work on non-GPU systems (beyond what is provided with thrust).
 // Older Thrust defined __host__/__device__ for non-CUDA backends; modern CCCL
 // (3.x) no longer does, so define them here for plain-C++ compilation.
-#if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
+#ifndef GOOFIT_GPU
 #ifndef __host__
 #define __host__
 #endif
@@ -39,7 +49,7 @@ inline void cudaDeviceSynchronize() {}
 #endif
 
 // Specialty copies
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 
 #define GOOFIT_CUDA_CHECK(function)                                                                                    \
     {                                                                                                                  \
@@ -72,10 +82,15 @@ void *get_device_symbol_address(const T &symbol) {
 }
 } // namespace GooFit
 
+#ifdef __CUDACC__
 // This automatically selects the correct CUDA arch and expands the __ldg intrinsic to work on arbitrary types
 // CUDACC only
 #include <generics/ldg.h>
 #define RO_CACHE(x) __ldg(&x)
+#else
+// AMD GPUs have no separate read-only data cache path to select
+#define RO_CACHE(x) x
+#endif
 
 #else
 
@@ -110,7 +125,7 @@ auto get_device_symbol_address(const T &symbol) -> void * {
 #define BLOCKIDX (0)
 #define THREAD_SYNCH
 
-#elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#elif defined(GOOFIT_GPU)
 
 #define THREADIDX (threadIdx.x)
 #define BLOCKDIM (blockDim.x)
@@ -119,10 +134,10 @@ auto get_device_symbol_address(const T &symbol) -> void * {
 #endif
 
 // CUDA errors (only needed for explicit memory transfers)
-// For CUDA case, just use existing errors
+// For CUDA case, just use existing errors (HIP's are aliased in HipCompat.h)
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #include <driver_types.h>
-#else
+#elif !defined(GOOFIT_GPU)
 enum cudaError_t { cudaSuccess, cudaErrorMemoryAllocation };
 #endif
 

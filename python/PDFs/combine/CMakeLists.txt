@@ -1,5 +1,12 @@
-add_library(_Combine STATIC AddPdf.cpp CompositePdf.cpp ConvolutionPdf.cpp EventWeightedAddPdf.cpp
-                            MappedPdf.cpp ProdPdf.cpp)
+goofit_add_library(
+  _Combine
+  STATIC
+  AddPdf.cpp
+  CompositePdf.cpp
+  ConvolutionPdf.cpp
+  EventWeightedAddPdf.cpp
+  MappedPdf.cpp
+  ProdPdf.cpp)
 
 target_link_libraries(_Combine PRIVATE _goofit_python)
 set_target_properties(_Combine PROPERTIES FOLDER python/PDFs CUDA_RESOLVE_DEVICE_SYMBOLS ON)

@@ -1,5 +1,6 @@
-add_library(
-  _Basic STATIC
+goofit_add_library(
+  _Basic
+  STATIC
   ArgusPdf.cpp
   BifurGaussPdf.cpp
   BinTransformPdf.cpp

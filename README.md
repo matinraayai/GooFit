@@ -44,6 +44,14 @@ https://github.com/GooFit/GooFit/labels/critical https://github.com/GooFit/GooFi
 
 </p></details>
 
+<details><summary>If using HIP (AMD GPUs): (click to expand)</summary><p>
+
+* ROCm with HIP and rocThrust (tested with ROCm 7 / rocThrust 4.7)
+* An AMD GPU with double precision support; set the target with `-DCMAKE_HIP_ARCHITECTURES` if building on a machine without it
+* All GooFit sources (`.cu` and `.cpp`) are compiled as HIP with relocatable device code (`-fgpu-rdc`); rocThrust replaces the bundled CCCL
+
+</p></details>
+
 <details><summary>If using OpenMP: (click to expand)</summary><p>
 
 * A compiler supporting OpenMP and C++17 (GCC 7+ and Clang tested)
@@ -100,7 +108,7 @@ You can either checkout a tagged version, or stay on the master for the latest a
 
 ## Building
 
-If you just want to get started as fast as possible, running `make`, `make omp`, or `make cuda` in the main directory will make a build directory for you, and will run CMake and make. It is recommended that you instead directly use the CMake powered build system as described below, so that you will have a better understanding of what you are doing and more flexibility.
+If you just want to get started as fast as possible, running `make`, `make omp`, `make cuda`, or `make hip` in the main directory will make a build directory for you, and will run CMake and make. It is recommended that you instead directly use the CMake powered build system as described below, so that you will have a better understanding of what you are doing and more flexibility.
 
 The build system uses CMake. The procedure is standard for CMake builds:
 
@@ -125,11 +133,12 @@ If you want to change compiler, set `CC` and `CXX` to appropriate defaults *befo
 cmake .. -DGOOFIT_DEVICE=CUDA -DGOOFIT_HOST=CPP
 ```
 
-Valid options are `CUDA` (device only), `OMP`, `TBB`, and `CPP`. The Thrust `TBB` backend requires the Intel compiler.  The default device is `Auto`, and will select `CUDA` if CUDA is found, `OMP` or `CPP` otherwise.
+Valid options are `CUDA` (device only), `HIP` (device only), `OMP`, `TBB`, and `CPP`. The Thrust `TBB` backend requires the Intel compiler.  The default device is `Auto`, and will select `CUDA` if CUDA is found, then `HIP` if a HIP compiler is found, `OMP` or `CPP` otherwise.
 
 Other custom options supported along with the defaults:
 
-* `-DGOOFIT_DEVICE=Auto`: The device to use for computation (`CUDA`, `OMP`, `TBB`, or `CPP`). Default setting of `Auto` looks for CUDA first, then OpenMP, then CPP.
+* `-DGOOFIT_DEVICE=Auto`: The device to use for computation (`CUDA`, `HIP`, `OMP`, `TBB`, or `CPP`). Default setting of `Auto` looks for CUDA first, then HIP, then OpenMP, then CPP.
+* `-DCMAKE_HIP_ARCHITECTURES=gfx90a`: For the `HIP` backend, the AMD GPU target(s), e.g. `gfx90a;gfx942`. CMake defaults to the GPU(s) found on the build machine.
 * `-DGOOFIT_ARCH=Auto`: (`Auto`, `Common`, `All`, valid number(s) or name(s)): sets the compute architecture. See [CUDA_SELECT_NVCC_ARCH_FLAGS][]. Can be set to `OFF` to avoid adding any flags.
 * `-DGOOFIT_EXAMPLES=ON`: Build the examples
 * `-DGOOFIT_PACKAGES=ON`: Build any packages found with the name `goofit_*`

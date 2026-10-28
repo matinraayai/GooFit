@@ -1,5 +1,6 @@
-add_library(
-  _Core STATIC
+goofit_add_library(
+  _Core
+  STATIC
   HelpPrinter.cpp
   Variable.cpp
   DataSet.cpp

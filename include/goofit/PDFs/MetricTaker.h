@@ -5,7 +5,7 @@
 
 #include <goofit/PdfBase.h>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#ifdef GOOFIT_GPU
 #define cuda_error_check(stat)                                                                                         \
     {                                                                                                                  \
         cudaErrCheck_((stat), __FILE__, __LINE__);                                                                     \

@@ -1,4 +1,4 @@
-.PHONY: default auto xcode omp cuda info mpi docs cmake base
+.PHONY: default auto xcode omp cuda hip info mpi docs cmake base
 
 UNAME := $(shell uname)
 CMAKE_VER := 3.11.2
@@ -42,6 +42,11 @@ cuda: base
 	@mkdir -p build-cuda
 	cd build-cuda && $(CMAKE_EXE) .. -DGOOFIT_DEVICE=CUDA && $(MAKE) --no-print-directory
 	cd build-cuda && $(CTEST_EXE) --output-on-failure
+
+hip: base
+	@mkdir -p build-hip
+	cd build-hip && $(CMAKE_EXE) .. -DGOOFIT_DEVICE=HIP && $(MAKE) --no-print-directory
+	cd build-hip && $(CTEST_EXE) --output-on-failure
 
 mpi: base
 	@mkdir -p build-mpi
